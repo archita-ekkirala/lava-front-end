@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Grid, Typography, Card, CardContent, Tabs, Tab } from '@mui/material';
+import { Box, Grid, Typography, Card, CardContent, Tabs, Tab, Button } from '@mui/material';
 import { Line, Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -15,9 +15,10 @@ import {
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend);
 
-const Dashboard = () => {
+const HeartFailurePrediction = (props) => {
   const [tab, setTab] = useState(0);
   const [metricsData, setMetricsData] = useState(null);
+  const { goBack } = props;
 
   const handleTabChange = (event, newValue) => setTab(newValue);
 
@@ -70,9 +71,9 @@ const Dashboard = () => {
 
   const metrics = metricsData ? [
     { label: 'Overall Accuracy', value: `${(metricsData.summary_metrics.overall_accuracy * 100).toFixed(1)}%` },
-    { label: 'CKD Prediction Reliability', value: `${(metricsData.summary_metrics.alert_reliability * 100).toFixed(1)}%` },
-    { label: 'CKD Prediction detection Rate', value: `${(metricsData.summary_metrics.need_detection_rate * 100).toFixed(1)}%` },
-    { label: 'Balanced CKD Prediction score', value: metricsData.summary_metrics.balanced_score.toFixed(2) }
+    { label: 'Heart Failure Prediction Reliability', value: `${(metricsData.summary_metrics.alert_reliability * 100).toFixed(1)}%` },
+    { label: 'Heart Failure Prediction detection Rate', value: `${(metricsData.summary_metrics.need_detection_rate * 100).toFixed(1)}%` },
+    { label: 'Balanced Heart Failure Prediction score', value: metricsData.summary_metrics.balanced_score.toFixed(2) }
   ] : [];
 
   const accuracyChart = {
@@ -124,8 +125,13 @@ const Dashboard = () => {
 
   return (
     <Box p={4} width="100%">
+    <Box mb={2} display="flex" justifyContent="flex-start">
+    <Button variant="outlined" onClick={goBack}>
+        ← Back
+    </Button>
+    </Box>
       <Typography variant="h5" gutterBottom>
-        Accuracy Metrics: Development of CKD Prediction
+        Accuracy Metrics: Heart Failure Prediction
       </Typography>
 
       {metricsData && (
@@ -160,19 +166,19 @@ const Dashboard = () => {
                     <Box display="grid" gridTemplateColumns="1fr 1fr" gap={2} mt={2}>
                       <Box bgcolor="#e0f2f1" p={2} borderRadius={2} textAlign="center">
                         <Typography variant="h6">{metricsData.confusion_matrix.true_positive}</Typography>
-                        <Typography variant="body2">Correctly predicted CKD</Typography>
+                        <Typography variant="body2">Correctly predicted Heart Failures</Typography>
                       </Box>
                       <Box bgcolor="#ffebee" p={2} borderRadius={2} textAlign="center">
                         <Typography variant="h6">{metricsData.confusion_matrix.false_negative}</Typography>
-                        <Typography variant="body2">Missed CKD Predictions</Typography>
+                        <Typography variant="body2">Missed Heart Failure Predictions</Typography>
                       </Box>
                       <Box bgcolor="#ffebee" p={2} borderRadius={2} textAlign="center">
                         <Typography variant="h6">{metricsData.confusion_matrix.false_positive}</Typography>
-                        <Typography variant="body2">Wrongly predicted CKD positive</Typography>
+                        <Typography variant="body2">Wrongly predicted Heart Failures</Typography>
                       </Box>
                       <Box bgcolor="#e0f2f1" p={2} borderRadius={2} textAlign="center">
                         <Typography variant="h6">{metricsData.confusion_matrix.true_negative}</Typography>
-                        <Typography variant="body2">Correctly predicted CKD negative</Typography>
+                        <Typography variant="body2">Correctly predicted absence of heart failure</Typography>
                       </Box>
                     </Box>
                   </Grid>
@@ -200,7 +206,7 @@ const Dashboard = () => {
             {tab === 1 && (
               <Box mt={4}>
               <Typography variant="h6" align="center">
-                🚧 Bias Analysis – Coming Soon...
+                Bias Analysis - Coming Soon...
               </Typography>
             </Box>
             )}
@@ -208,7 +214,7 @@ const Dashboard = () => {
             {tab === 2 && (
             <Box mt={4}>
               <Typography variant="h6" align="center">
-                📊 Data Distribution – Coming Soon...
+                Data Distribution - Coming Soon...
               </Typography>
             </Box>
             )}
@@ -219,4 +225,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+export default HeartFailurePrediction;
