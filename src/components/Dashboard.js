@@ -70,9 +70,9 @@ const Dashboard = () => {
 
   const metrics = metricsData ? [
     { label: 'Overall Accuracy', value: `${(metricsData.summary_metrics.overall_accuracy * 100).toFixed(1)}%` },
-    { label: 'Admission Alert Reliability', value: `${(metricsData.summary_metrics.alert_reliability * 100).toFixed(1)}%` },
-    { label: 'Admission Need Detection Rate', value: `${(metricsData.summary_metrics.need_detection_rate * 100).toFixed(1)}%` },
-    { label: 'Balanced Admission Prediction Score', value: metricsData.summary_metrics.balanced_score.toFixed(2) }
+    { label: 'CKD Prediction Reliability', value: `${(metricsData.summary_metrics.alert_reliability * 100).toFixed(1)}%` },
+    { label: 'CKD Prediction detection Rate', value: `${(metricsData.summary_metrics.need_detection_rate * 100).toFixed(1)}%` },
+    { label: 'Balanced CKD Prediction score', value: metricsData.summary_metrics.balanced_score.toFixed(2) }
   ] : [];
 
   const accuracyChart = {
@@ -125,7 +125,7 @@ const Dashboard = () => {
   return (
     <Box p={4} width="100%">
       <Typography variant="h5" gutterBottom>
-        Accuracy Metrics: Hospitalization Risk Prediction
+        Accuracy Metrics: Development of CKD Prediction
       </Typography>
 
       {metricsData && (
@@ -160,19 +160,19 @@ const Dashboard = () => {
                     <Box display="grid" gridTemplateColumns="1fr 1fr" gap={2} mt={2}>
                       <Box bgcolor="#e0f2f1" p={2} borderRadius={2} textAlign="center">
                         <Typography variant="h6">{metricsData.confusion_matrix.true_positive}</Typography>
-                        <Typography variant="body2">Correctly Predicted Admission</Typography>
+                        <Typography variant="body2">Correctly predicted CKD</Typography>
                       </Box>
                       <Box bgcolor="#ffebee" p={2} borderRadius={2} textAlign="center">
                         <Typography variant="h6">{metricsData.confusion_matrix.false_negative}</Typography>
-                        <Typography variant="body2">Missed Admission Needs</Typography>
+                        <Typography variant="body2">Missed CKD Predictions</Typography>
                       </Box>
                       <Box bgcolor="#ffebee" p={2} borderRadius={2} textAlign="center">
                         <Typography variant="h6">{metricsData.confusion_matrix.false_positive}</Typography>
-                        <Typography variant="body2">Unnecessary Admission</Typography>
+                        <Typography variant="body2">Wrongly predicted CKD positive</Typography>
                       </Box>
                       <Box bgcolor="#e0f2f1" p={2} borderRadius={2} textAlign="center">
                         <Typography variant="h6">{metricsData.confusion_matrix.true_negative}</Typography>
-                        <Typography variant="body2">Correctly Predicted Non-Admission</Typography>
+                        <Typography variant="body2">Correctly predicted CKD negative</Typography>
                       </Box>
                     </Box>
                   </Grid>
@@ -196,6 +196,21 @@ const Dashboard = () => {
                   </Grid>
                 </Box>
               </Box>
+            )}
+            {tab === 1 && (
+              <Box mt={4}>
+              <Typography variant="h6" align="center">
+                🚧 Bias Analysis – Coming Soon...
+              </Typography>
+            </Box>
+            )}
+
+            {tab === 2 && (
+            <Box mt={4}>
+              <Typography variant="h6" align="center">
+                📊 Data Distribution – Coming Soon...
+              </Typography>
+            </Box>
             )}
           </Box>
         </>
