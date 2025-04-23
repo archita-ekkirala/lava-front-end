@@ -22,7 +22,7 @@ function App() {
     const serviceUri = urlParams["iss"];
     const launch = urlParams["launch"];
     const code = urlParams["code"];
-    const clientId = "5a63297c-5b19-11ef-8e85-0280bad11495";
+    const clientId = "98da0d36-207d-11f0-9d81-0a2d94f3c43f";
     const scope = "launch openid fhirUser patient/*.read";
     const redirectUri = window.location.origin;
 

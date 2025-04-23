@@ -25,7 +25,7 @@ const CKDPrediction = (props) => {
   useEffect(() => {
     const fetchMetrics = async () => {
       try {
-        const response = await fetch("http://127.0.0.1:5000/calculate_metrics");
+        const response = await fetch("http://54.166.135.219:5000/calculate_metrics");
         const data = await response.json();
 
         const formatted = {
