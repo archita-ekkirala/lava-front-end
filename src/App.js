@@ -16,15 +16,19 @@ function getUrlParams() {
 function App() {
   const [message, setMessage] = useState("🔐 Waiting for SMART Authorization Token...");
   const [isAuthorized, setIsAuthorized] = useState(false);
+  const clientIdMapping = {
+    "https://bfee16.devhcp.com/fhir": "98da0d36-207d-11f0-9d81-0a2d94f3c43f",
+    "https://fhir-ehr-code.cerner.com/r4/ec2458f2-1e24-41c8-b71b-0e701af7583d": "54f6c242-70a0-40cb-826f-821522b61bd3",
+  };  
 
   useEffect(() => {
     const urlParams = getUrlParams();
     const serviceUri = urlParams["iss"];
     const launch = urlParams["launch"];
     const code = urlParams["code"];
-    const clientId = "98da0d36-207d-11f0-9d81-0a2d94f3c43f";
-    const scope = "launch openid fhirUser patient/*.read";
-    const redirectUri = window.location.origin;
+    const clientId = clientIdMapping[serviceUri];
+    const scope = "launch/patient openid fhirUser patient/*.read";
+    const redirectUri = "http://localhost:3000/index";
 
     if (code) {
       const tokenUri = sessionStorage.getItem("tokenUri");
@@ -77,7 +81,7 @@ function App() {
             `response_type=code&` +
             `client_id=${encodeURIComponent(clientId)}&` +
             `scope=${encodeURIComponent(scope)}&` +
-            `state=8600b31f-52d1-4dca-987c-386e3d8967e9&` +
+            `state=76cb5332-f09f-4325-92d6-baa85a65d218&` +
             `redirect_uri=${encodeURIComponent(redirectUri)}&` +
             `aud=${encodeURIComponent(serviceUri)}`;
 
