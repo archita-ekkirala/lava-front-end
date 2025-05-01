@@ -16,13 +16,17 @@ function getUrlParams() {
 function App() {
   const [message, setMessage] = useState("🔐 Waiting for SMART Authorization Token...");
   const [isAuthorized, setIsAuthorized] = useState(false);
+  const clientIdMapping = {
+    "https://bfee16.devhcp.com/fhir": "98da0d36-207d-11f0-9d81-0a2d94f3c43f",
+    "https://fhir-ehr-code.cerner.com/r4/ec2458f2-1e24-41c8-b71b-0e701af7583d": "54f6c242-70a0-40cb-826f-821522b61bd3",
+  };  
 
   useEffect(() => {
     const urlParams = getUrlParams();
     const serviceUri = urlParams["iss"];
     const launch = urlParams["launch"];
     const code = urlParams["code"];
-    const clientId = "54f6c242-70a0-40cb-826f-821522b61bd3";
+    const clientId = clientIdMapping[serviceUri];
     const scope = "launch/patient openid fhirUser patient/*.read";
     const redirectUri = "http://localhost:3000/index";
 
