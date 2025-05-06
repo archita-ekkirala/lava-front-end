@@ -12,6 +12,7 @@ import {
   Tooltip,
   Legend
 } from 'chart.js';
+import CsvFromFhir from '../CsvFromFhir';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend);
 
@@ -19,13 +20,29 @@ const CKDPrediction = (props) => {
   const [tab, setTab] = useState(0);
   const [metricsData, setMetricsData] = useState(null);
   const { goBack } = props;
+  const [csvData, setCsvData] = useState("");
+  // const PREDICTION_SERVER = "http://54.166.135.219:5000";
+  const PREDICTION_SERVER = "http://localhost:5000";
+
+  const handleCsvReady = (csv) => {
+    console.log("CSV received in parent:", csv);
+    setCsvData(csv);
+  };
 
   const handleTabChange = (event, newValue) => setTab(newValue);
 
   useEffect(() => {
+
     const fetchMetrics = async () => {
+      const blob = new Blob([csvData], { type: 'text/csv' });
+      const formData = new FormData();
+      formData.append('file', blob, 'data.csv'); 
+
       try {
-        const response = await fetch("http://54.166.135.219:5000/calculate_metrics");
+        const response = await fetch(PREDICTION_SERVER+"/calculate_metrics",{
+          method: 'POST',
+          body: formData,
+        });
         const data = await response.json();
 
         const formatted = {
@@ -65,9 +82,10 @@ const CKDPrediction = (props) => {
         console.error("API fetch failed", err);
       }
     };
-
-    fetchMetrics();
-  }, []);
+    if(csvData && csvData.length > 0){
+      fetchMetrics();
+    }
+  }, [csvData]);
 
   const metrics = metricsData ? [
     { label: 'Overall Accuracy', value: `${(metricsData.summary_metrics.overall_accuracy * 100).toFixed(1)}%` },
@@ -124,6 +142,7 @@ const CKDPrediction = (props) => {
   };
 
   return (
+    <div><CsvFromFhir onCsvReady={handleCsvReady}/>
     <Box p={4} maxWidth="xl" mx="auto" width="100%">
     <Box mb={2} display="flex" justifyContent="flex-start">
     <Button variant="outlined" onClick={goBack}>
@@ -222,6 +241,7 @@ const CKDPrediction = (props) => {
         </>
       )}
     </Box>
+    </div>
   );
 };
 

@@ -22,10 +22,9 @@ function App() {
     const serviceUri = urlParams["iss"];
     const launch = urlParams["launch"];
     const code = urlParams["code"];
-    const clientId = "98da0d36-207d-11f0-9d81-0a2d94f3c43f";
+    const clientId = "5a63297c-5b19-11ef-8e85-0280bad11495";
     const scope = "launch openid fhirUser patient/*.read";
     const redirectUri = window.location.origin;
-
     if (code) {
       const tokenUri = sessionStorage.getItem("tokenUri");
       const data = `grant_type=authorization_code&code=${encodeURIComponent(
@@ -71,6 +70,7 @@ function App() {
             throw new Error("Authorization or Token URI not found in metadata");
 
           sessionStorage.setItem("tokenUri", tokenUri);
+          sessionStorage.setItem("serverUri", serviceUri);
 
           let authorizeUrl =
             `${authUri}?` +
@@ -81,6 +81,7 @@ function App() {
             `redirect_uri=${encodeURIComponent(redirectUri)}&` +
             `aud=${encodeURIComponent(serviceUri)}`;
 
+          
           if (launch) {
             authorizeUrl += `&launch=${encodeURIComponent(launch)}`;
           }
