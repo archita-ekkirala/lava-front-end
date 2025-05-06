@@ -56,7 +56,11 @@ const CKDPrediction = (props) => {
             true_positive: data["True Positive"],
             false_negative: data["False Negative"],
             false_positive: data["False Positive"],
-            true_negative: data["True Negative"]
+            true_negative: data["True Negative"],
+            true_positive_rate: data["True Positive Rate"].toFixed(2),
+            true_negative_rate: data ["True Negative Rate"].toFixed(2),
+            false_positive_rate: data["False Positive Rate"].toFixed(2),
+            false_negative_rate: data ["False Negative Rate"].toFixed(2)
           },
           detailed_metrics: {
             accuracy: data.Accuracy,
@@ -184,19 +188,19 @@ const CKDPrediction = (props) => {
                     <Typography variant="subtitle1">Admission Decision Breakdown</Typography>
                     <Box display="grid" gridTemplateColumns="1fr 1fr" gap={2} mt={2}>
                       <Box bgcolor="#e0f2f1" p={2} borderRadius={2} textAlign="center">
-                        <Typography variant="h6">{metricsData.confusion_matrix.true_positive}</Typography>
+                        <Typography variant="h6">{metricsData.confusion_matrix.true_positive}({metricsData.confusion_matrix.true_positive_rate}%)</Typography>
                         <Typography variant="body2">Correctly predicted CKD</Typography>
                       </Box>
                       <Box bgcolor="#ffebee" p={2} borderRadius={2} textAlign="center">
-                        <Typography variant="h6">{metricsData.confusion_matrix.false_negative}</Typography>
+                        <Typography variant="h6">{metricsData.confusion_matrix.false_negative}({metricsData.confusion_matrix.false_negative_rate}%)</Typography>
                         <Typography variant="body2">Missed CKD Predictions</Typography>
                       </Box>
                       <Box bgcolor="#ffebee" p={2} borderRadius={2} textAlign="center">
-                        <Typography variant="h6">{metricsData.confusion_matrix.false_positive}</Typography>
+                        <Typography variant="h6">{metricsData.confusion_matrix.false_positive}({metricsData.confusion_matrix.false_positive_rate})%</Typography>
                         <Typography variant="body2">Wrongly predicted CKD positive</Typography>
                       </Box>
                       <Box bgcolor="#e0f2f1" p={2} borderRadius={2} textAlign="center">
-                        <Typography variant="h6">{metricsData.confusion_matrix.true_negative}</Typography>
+                        <Typography variant="h6">{metricsData.confusion_matrix.true_negative}({metricsData.confusion_matrix.true_negative_rate}%)</Typography>
                         <Typography variant="body2">Correctly predicted CKD negative</Typography>
                       </Box>
                     </Box>
@@ -212,7 +216,30 @@ const CKDPrediction = (props) => {
                   <Grid container spacing={4} maxWidth="xl">
                     <Grid item xs={12} md={6}>
                       <Typography variant="subtitle1">Accuracy Metrics</Typography>
-                      <Bar data={barChartData} options={{ responsive: true, plugins: { legend: { display: false } }, scales: { y: { min: 0, max: 1 } } }} />
+                      <Bar
+                        data={barChartData}
+                        options={{
+                          responsive: true,
+                          plugins: {
+                            legend: { display: false },
+                            datalabels: {
+                              anchor: 'end',
+                              align: 'top',
+                              formatter: (value) => value.toFixed(2),
+                              font: {
+                                weight: 'bold'
+                              }
+                            }
+                          },
+                          scales: {
+                            y: {
+                              min: 0,
+                              max: 1
+                            }
+                          }
+                        }}
+                      />
+
                     </Grid>
                     <Grid item xs={12} md={6}>
                       <Typography variant="subtitle1">ROC Curve</Typography>
