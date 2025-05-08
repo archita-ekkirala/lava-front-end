@@ -101,7 +101,7 @@ function App() {
   }, []);
 
   return (
-    <div style={{ padding: "2rem", fontSize: "1.2rem" }}>
+    <div style={{ paddingLeft: "2rem", fontSize: "1.2rem", alignItems:"center" }}>
       {isAuthorized ? <Lava /> : message}
     </div>
   );

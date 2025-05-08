@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { CircularProgress } from "@mui/material";
 
-const CsvFromFhir = ( {onCsvReady}) => {
+const CKDPredictionCsvFromFhir = ( {onCsvReady}) => {
   const [loading, setLoading] = useState(true);
 
   const FHIR_BASE = sessionStorage.getItem("serverUri");
@@ -151,10 +151,11 @@ const CsvFromFhir = ( {onCsvReady}) => {
     ];
   
     // Convert rows to CSV string
-    const csvString = csvRows.map(row => row.join(",")).join("\n");
+    //const csvString = csvRows.map(row => row.join(",")).join("\n");
 
     if(onCsvReady){
-      onCsvReady(csvString);
+      onCsvReady(csvRows);
+      console.log(csvRows.map(row => row.join(",")).join("\n"));
     }
   
     // Trigger download of the CSV file
@@ -238,4 +239,4 @@ const CsvFromFhir = ( {onCsvReady}) => {
     </div>;
 };
 
-export default CsvFromFhir;
+export default CKDPredictionCsvFromFhir;

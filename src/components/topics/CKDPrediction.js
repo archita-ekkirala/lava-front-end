@@ -12,7 +12,9 @@ import {
   Tooltip,
   Legend
 } from 'chart.js';
-import CsvFromFhir from '../CsvFromFhir';
+
+import { CalculateMetrics } from '../metrics/CalculateMetrics';
+import CKDPredictionCsvFromFhir from '../CKDPredictionCsvFromFhir';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend);
 
@@ -34,16 +36,50 @@ const CKDPrediction = (props) => {
   useEffect(() => {
 
     const fetchMetrics = async () => {
-      const blob = new Blob([csvData], { type: 'text/csv' });
-      const formData = new FormData();
-      formData.append('file', blob, 'data.csv'); 
+      console.log("fetching metrics")
+      console.log(csvData)
 
       try {
-        const response = await fetch(PREDICTION_SERVER+"/calculate_metrics",{
-          method: 'POST',
-          body: formData,
+        // const response = await fetch(PREDICTION_SERVER+"/calculate_metrics",{
+        //   method: 'POST',
+        //   body: formData,
+        // });
+        // const data = await response.json();
+
+        const [headers, ...rows] = csvData;
+        let formattedCsvData = rows.map(row =>
+          headers.reduce((acc, header, index) => {
+            acc[header] = row[index];
+            return acc;
+          }, {})
+        );
+
+        let result = formattedCsvData.map(row => ({
+          ...row,
+          Prediction_Timestamp: new Date(row.Prediction_Timestamp),
+          Prediction: parseFloat(row.Predicted_Outcome),
+          Actual: parseInt(row.CKD_Actual_Outcome)
+        }));
+
+        console.log(result)
+
+        // Sort by Prediction_Timestamp and deduplicate by Patient_ID
+        const sorted = [...result].sort((a, b) =>
+          new Date(a.Prediction_Timestamp) - new Date(b.Prediction_Timestamp)
+        );
+
+        const unique = new Map();
+        sorted.forEach(row => {
+          unique.set(row.Patient_ID, row); // keeps last by timestamp due to sorting
         });
-        const data = await response.json();
+
+        const finalData = Array.from(unique.values());
+
+        const y_true = finalData.map(row => row.Actual);
+        const y_pred = finalData.map(row => row.Prediction);
+        console.log(y_true+"--"+y_pred);
+
+        const data = await CalculateMetrics(y_true, y_pred);
 
         const formatted = {
           summary_metrics: {
@@ -87,6 +123,7 @@ const CKDPrediction = (props) => {
       }
     };
     if(csvData && csvData.length > 0){
+      console.log("csvData found")
       fetchMetrics();
     }
   }, [csvData]);
@@ -146,7 +183,7 @@ const CKDPrediction = (props) => {
   };
 
   return (
-    <div><CsvFromFhir onCsvReady={handleCsvReady}/>
+    <div><CKDPredictionCsvFromFhir onCsvReady={handleCsvReady}/>
     <Box p={4} maxWidth="xl" mx="auto" width="100%">
     <Box mb={2} display="flex" justifyContent="flex-start">
     <Button variant="outlined" onClick={goBack}>
