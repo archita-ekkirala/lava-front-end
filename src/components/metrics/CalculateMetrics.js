@@ -42,8 +42,6 @@ function rocCurve(actual, predicted) {
     return { fpr: fprs, tpr: tprs };
 }
 
-
-
 export async function CalculateMetrics(yTrue, yPredOriginal) {
     console.log("in calculate metrics")
     const { metrics, model_selection } = sk;
@@ -60,7 +58,6 @@ export async function CalculateMetrics(yTrue, yPredOriginal) {
     console.log(yTrue, yPred, { labels: [0, 1] })
 
     const cm = await metrics.confusionMatrix(yTrue, yPred, { labels: [0, 1] });
-    console.log(cm)
 
     let tn, fp, fn, tp;
 
@@ -83,13 +80,12 @@ export async function CalculateMetrics(yTrue, yPredOriginal) {
 
     const precision = await metrics.precisionScore(yTrue, yPred, { zero_division: 0 });
     const recall = await metrics.recallScore(yTrue, yPred, { zero_division: 0 });
-    const f1 = 2 * (precision * recall) / (precision + recall);
+    const f1 = (precision + recall === 0) ? 0 : 2 * (precision * recall) / (precision + recall);
     const brier = brierScoreLoss(yTrue, yPred);
 
     let auroc = 0;
     if (new Set(yTrue).size > 1) {
         const { fpr: fprVals, tpr: tprVals } = rocCurve(yTrue, yPred);
-        console.log(fprVals+""+tprVals)
         auroc = metrics.rocAucScore(fprVals, tprVals);
     }
 

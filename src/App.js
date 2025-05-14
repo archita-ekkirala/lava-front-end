@@ -18,7 +18,7 @@ function App() {
   const [isAuthorized, setIsAuthorized] = useState(false);
   const clientIdMapping = {
     "https://bfee16.devhcp.com/fhir": "98da0d36-207d-11f0-9d81-0a2d94f3c43f",
-    "https://fhir-ehr-code.cerner.com/r4/ec2458f2-1e24-41c8-b71b-0e701af7583d": "54f6c242-70a0-40cb-826f-821522b61bd3",
+    "https://fhir-ehr-code.cerner.com/r4/ec2458f2-1e24-41c8-b71b-0e701af7583d": "4a80ce69-5e36-4a99-adc7-5ea3c6b46399",
   };  
 
   useEffect(() => {
@@ -26,10 +26,13 @@ function App() {
     const serviceUri = urlParams["iss"];
     const launch = urlParams["launch"];
     const code = urlParams["code"];
-    const clientId = clientIdMapping[serviceUri];
+    const storedUri = sessionStorage.getItem("serverUri") || serviceUri;
+    const clientId = clientIdMapping[storedUri] || "4a80ce69-5e36-4a99-adc7-5ea3c6b46399";
+    //const clientId = "4a80ce69-5e36-4a99-adc7-5ea3c6b46399";
     const scope = "launch/patient openid fhirUser patient/*.read";
     const redirectUri = "http://localhost:3000/index";
 
+   // if(sessionStorage.getItem("tokenExchanged") === "true") return;
     if (code) {
       const tokenUri = sessionStorage.getItem("tokenUri");
       const data = `grant_type=authorization_code&code=${encodeURIComponent(
@@ -37,6 +40,7 @@ function App() {
       )}&redirect_uri=${encodeURIComponent(redirectUri)}&client_id=${encodeURIComponent(
         clientId
       )}`;
+      console.log(data)
 
       fetch(tokenUri, {
         method: "POST",
@@ -47,15 +51,19 @@ function App() {
       })
         .then((res) => res.json())
         .then((tokenResponse) => {
-          sessionStorage.setItem("token", tokenResponse.access_token);
-          sessionStorage.setItem("auth_response", JSON.stringify(tokenResponse));
-          setIsAuthorized(true);
+          if(tokenResponse.access_token != undefined){
+            sessionStorage.setItem("token", tokenResponse.access_token);
+            sessionStorage.setItem("auth_response", JSON.stringify(tokenResponse));
+            //sessionStorage.setItem("tokenExchanged", "true");
+            setIsAuthorized(true);
+          }
         })
         .catch((err) => {
           console.error("Token Exchange Error:", err);
           setMessage(`❌ Error exchanging code for token: ${err.message}`);
         });
     } else if (serviceUri) {
+      console.log(serviceUri);
       // EHR or Standalone launch (depending on presence of `launch`)
       fetch(`${serviceUri}/metadata`)
         .then((res) => res.json())

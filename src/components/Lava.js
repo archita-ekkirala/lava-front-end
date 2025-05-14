@@ -5,6 +5,7 @@ import HeartFailurePrediction from './topics/HeartFailurePrediction';
 import HospitalizationRiskPrediction from './topics/HospitalizationRiskPrediction';
 import * as tf from '@tensorflow/tfjs'
 import * as sk from 'scikitjs'
+import CardioVascularPrediction from './topics/CardioVascularPrediction';
 
 const Lava = () => {
   const [selection, setSelection] = useState(null);
@@ -26,8 +27,8 @@ const Lava = () => {
     switch (selection.topic) {
       case 'CKD':
         return <CKDPrediction goBack={goBack}/>;
-      case 'HeartFailure':
-        return <HeartFailurePrediction goBack={goBack}/>;
+      case 'CardioVascularPrediction':
+        return <CardioVascularPrediction goBack={goBack}/>;
       case 'HospitalizationRisk':
         return <HospitalizationRiskPrediction goBack={goBack}/>;
       default:
