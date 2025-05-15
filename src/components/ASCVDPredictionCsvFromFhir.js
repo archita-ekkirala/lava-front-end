@@ -32,20 +32,12 @@ const ASCVDPredictionCsvFromFhir = ( {onCsvReady}) => {
   const fetchPatientResources = async (patientId) => {
     const resourceTypes = ["Observation", "Condition"];
     const fetches = resourceTypes.map(async (type) => {
-      let url = `${FHIR_BASE}/${type}?subject=Patient/${patientId}`;
-
-      // Add code filter for "2093-3" (Total Cholesterol) if resource type is Observation
-      if (type === "Observation") {
-          url += "&code=2093-3";
-      }
-
-      const randomNumber = Math.floor(Math.random() * (30000 + 1));
-      await new Promise((resolve) => setTimeout(resolve, randomNumber)); // Simulate delay
-      const res = await fetch(url, { headers });
+      const res = await fetch(`${FHIR_BASE}/${type}?subject=Patient/${patientId}`, { headers });
       const bundle = await res.json();
+      // console.log(bundle)
       return [type, (bundle.entry || []).map((e) => e.resource)];
     });
-
+  
     const results = await Promise.all(fetches);
     return Object.fromEntries(results);
   };
@@ -153,10 +145,10 @@ const ASCVDPredictionCsvFromFhir = ( {onCsvReady}) => {
     ];
   
     // Convert rows to CSV string
-    const csvString = csvRows.map(row => row.join(",")).join("\n");
+    // const csvString = csvRows.map(row => row.join(",")).join("\n");
 
     if(onCsvReady){
-      onCsvReady(csvString);
+      onCsvReady(csvRows);
     }
   
     // Trigger download of the CSV file
@@ -186,42 +178,31 @@ const ASCVDPredictionCsvFromFhir = ( {onCsvReady}) => {
         
         const patients = await fetchAllPatients();
   
+        const filteredPatients = patients.filter((patient) =>
+            patient.identifier?.some(
+                (id) => id.system === "lava" && id.value === "lava_test"
+            )
+        );
+
+        console.log(filteredPatients)
+
         const BATCH_SIZE = 10;
         const batches = [];
   
-        for (let i = 0; i < patients.length; i += BATCH_SIZE) {
-          const batch = patients.slice(i, i + BATCH_SIZE);
-
+        for (let i = 0; i < filteredPatients.length; i += BATCH_SIZE) {
+          const batch = filteredPatients.slice(i, i + BATCH_SIZE);
+  
           // Fetch resources and predictions in parallel for each batch
           const batchFetch = Promise.all(
             batch.map(async (patient) => {
-              console.log(patient);
-              const randomNumber = Math.floor(Math.random() * (30000 + 1))
-              await new Promise((resolve) => setTimeout(resolve, randomNumber)); // Simulate delay
               const resources = await fetchPatientResources(patient.id);
-              
-              // Enforce AND logic for observations
-              const requiredCodes = ["2093-3", "8480-6", "2085-9"];
-              const observations = resources.Observation || [];
-              const codesPresent = new Set(observations.map(obs => 
-                  obs.code.coding.map(c => c.code)
-              ).flat());
-
-              // Check if all required codes are present
-              const hasAllRequiredCodes = requiredCodes.every(code => codesPresent.has(code));
-
-              // Proceed only if the patient has all required codes
-              if (!hasAllRequiredCodes) {
-                  return;
-              }
-              
               const predictions = patient.identifier
                 ? await fetchPredictionsForPatient(patient.identifier[0].value)
                 : [];
               return { patient, resources, predictions };
             })
           );
-
+  
           batches.push(batchFetch);
         }
   
