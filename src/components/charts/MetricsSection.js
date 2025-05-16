@@ -177,8 +177,8 @@ const MetricsSection = ({ topic, metricsData, accuracyChart, barChartData, rocCh
                             options={{
                                 responsive: true,
                                 scales: {
-                                    x: { min: 0, max: 1 },
-                                    y: { min: 0, max: 1 },
+                                    x: { type:'linear',title : {display:true,text:'False Positive Rate'}, min: 0, max: 1 },
+                                    y: { type:'linear',title : {display:true,text:'True Positive Rate'}, min: 0, max: 1 },
                                 },
                             }}
                         />
