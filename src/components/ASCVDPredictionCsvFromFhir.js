@@ -16,7 +16,7 @@ const ASCVDPredictionCsvFromFhir = ( {onCsvReady}) => {
 
   const fetchAllPatients = async () => {
     let allPatients = [];
-    let nextUrl = `${FHIR_BASE}/Patient?_count=500`;
+    let nextUrl = `${FHIR_BASE}/Patient?_count=500&identifier=lava_test`;
     while (nextUrl) {
       const res = await fetch(nextUrl, { headers });
       const bundle = await res.json();
@@ -32,12 +32,17 @@ const ASCVDPredictionCsvFromFhir = ( {onCsvReady}) => {
   const fetchPatientResources = async (patientId) => {
     const resourceTypes = ["Observation", "Condition"];
     const fetches = resourceTypes.map(async (type) => {
-      const res = await fetch(`${FHIR_BASE}/${type}?subject=Patient/${patientId}`, { headers });
+      let url = `${FHIR_BASE}/${type}?subject=Patient/${patientId}`;
+
+      // Add code filter for "2093-3" (Total Cholesterol) if resource type is Observation
+      if (type === "Observation") {
+          url += "&code=2093-3";
+      }
+      const res = await fetch(url, { headers });
       const bundle = await res.json();
-      // console.log(bundle)
       return [type, (bundle.entry || []).map((e) => e.resource)];
     });
-  
+
     const results = await Promise.all(fetches);
     return Object.fromEntries(results);
   };
@@ -62,7 +67,6 @@ const ASCVDPredictionCsvFromFhir = ( {onCsvReady}) => {
   
 
   const generateCSV = (patientsWithResources,predictionMap) => {
-    console.log(predictionMap)
     const flatRows = [];
 
     // Function to standardize and filter duplicate conditions
@@ -126,6 +130,7 @@ const ASCVDPredictionCsvFromFhir = ( {onCsvReady}) => {
         row["Medications"] = "";
         row["ASCVD_Actual_Outcome"] = actualOutcome;
         row["Predicted_Outcome"]= prediction.predicted_outcome ? prediction.predicted_outcome : 0;
+        row["TenYearScore"]= prediction.tenyear_score ? prediction.tenyear_score : 0;
         
         flatRows.push(row);
       }
@@ -134,7 +139,7 @@ const ASCVDPredictionCsvFromFhir = ( {onCsvReady}) => {
     // Create CSV headers dynamically
     const headers = ["Patient_ID", 
       "Prediction_Timestamp","Birthdate", 
-      "GENDER", "Race",  "Total_Cholesterol", "HDL_Cholesterol", "Systolic_Blood_Pressure","Conditions","ASCVD_Actual_Outcome","Predicted_Outcome",  ];
+      "GENDER", "Race",  "Total_Cholesterol", "HDL_Cholesterol", "Systolic_Blood_Pressure","Conditions","ASCVD_Actual_Outcome","Predicted_Outcome", "TenYearScore" ];
   
     // Generate CSV content
     const csvRows = [
@@ -145,7 +150,7 @@ const ASCVDPredictionCsvFromFhir = ( {onCsvReady}) => {
     ];
   
     // Convert rows to CSV string
-    // const csvString = csvRows.map(row => row.join(",")).join("\n");
+    //const csvString = csvRows.map(row => row.join(",")).join("\n");
 
     if(onCsvReady){
       onCsvReady(csvRows);
@@ -178,23 +183,16 @@ const ASCVDPredictionCsvFromFhir = ( {onCsvReady}) => {
         
         const patients = await fetchAllPatients();
   
-        const filteredPatients = patients.filter((patient) =>
-            patient.identifier?.some(
-                (id) => id.system === "lava" && id.value === "lava_test"
-            )
-        );
-
-        console.log(filteredPatients)
-
         const BATCH_SIZE = 10;
         const batches = [];
   
-        for (let i = 0; i < filteredPatients.length; i += BATCH_SIZE) {
-          const batch = filteredPatients.slice(i, i + BATCH_SIZE);
-  
-          // Fetch resources and predictions in parallel for each batch
-          const batchFetch = Promise.all(
+        for (let i = 0; i < patients.length; i += BATCH_SIZE) {
+          const batch = patients.slice(i, i + BATCH_SIZE);
+
+         // Fetch resources and predictions in parallel for each batch
+         const batchFetch = Promise.all(
             batch.map(async (patient) => {
+              console.log(patient);
               const resources = await fetchPatientResources(patient.id);
               const predictions = patient.identifier
                 ? await fetchPredictionsForPatient(patient.identifier[0].value)
@@ -202,7 +200,7 @@ const ASCVDPredictionCsvFromFhir = ( {onCsvReady}) => {
               return { patient, resources, predictions };
             })
           );
-  
+
           batches.push(batchFetch);
         }
   

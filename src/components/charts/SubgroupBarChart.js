@@ -6,7 +6,7 @@ import {
 function transformSubgroupMetricsData(rawData) {
 
   console.log(rawData)
-  const excludeMetrics = ['True Positive', 'True Negative', 'False Positive', 'False Negative', 'ROC Curve', 'Confusion Matrix'];
+  const excludeMetrics = ['True Positive', 'True Negative', 'False Positive', 'False Negative', 'ROC_CURVE', 'Confusion Matrix'];
   const metrics = Object.keys(rawData[0]).filter(key => key !== 'Subgroup' && !excludeMetrics.includes(key));
 
   return metrics.map(metric => {
@@ -44,7 +44,8 @@ const SubgroupBarChart = ({ rawData, selectedFeature }) => {
           <XAxis dataKey="Metric" angle={-45} textAnchor="end" interval={0} height={100} />
           <YAxis domain={[0, 1.2]} ticks={[0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2]} />
           <Tooltip />
-          <Legend verticalAlign="top" layout="horizontal" align="right" wrapperStyle={{ marginTop: "-30px" }} />
+          <Legend verticalAlign="top" layout="horizontal" align="right" wrapperStyle={{ marginTop: "-30px" }}
+          formatter={(value) => value.charAt(0).toUpperCase() + value.slice(1)} />
           {subgroups.map((subgroup, i) => (
             <Bar
               key={subgroup}

@@ -84,8 +84,12 @@ export async function CalculateMetrics(yTrue, yPredOriginal) {
     const brier = brierScoreLoss(yTrue, yPred);
 
     let auroc = 0;
+    let fprVals = [];
+    let tprVals = [];   
     if (new Set(yTrue).size > 1) {
-        const { fpr: fprVals, tpr: tprVals } = rocCurve(yTrue, yPred);
+        const roc = rocCurve(yTrue, yPred);
+        fprVals = roc.fpr;
+        tprVals = roc.tpr;
         auroc = metrics.rocAucScore(fprVals, tprVals);
     }
 
@@ -105,6 +109,10 @@ export async function CalculateMetrics(yTrue, yPredOriginal) {
         'Recall': recall,
         'F1 Score': f1,
         'Brier Score': brier,
-        'AUROC': auroc
+        'AUROC': auroc,
+        'ROC_CURVE':{
+            'fpr': fprVals,
+            'tpr': tprVals  
+        }
     };
 }

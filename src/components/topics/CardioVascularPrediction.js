@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Grid, Typography, Card, CardContent, Tabs, Tab, Button, Paper } from '@mui/material';
-import { Line, Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -12,18 +11,14 @@ import {
   Tooltip,
   Legend
 } from 'chart.js';
-
-import { CalculateMetrics } from '../metrics/CalculateMetrics';
-import ASCVDPredictionCsvFromFhir from '../ASCVDPredictionCsvFromFhir';
 import { CalculateSubgroupMetrics } from '../metrics/CalculateSubgroupMetrics';
 import SubgroupBarChart from '../charts/SubgroupBarChart';
 import MetricsSection from '../charts/MetricsSection';
 import DistributionCharts from '../charts/DistributionCharts';
 import { CalculateMetricsForScore } from '../metrics/CalculateMetricsForScore';
+import ASCVDPredictionCsvFromFhir from '../ASCVDPredictionCsvFromFhir';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend);
-
-
 
 const CardioVascularPrediction = (props) => {
   const [tab, setTab] = useState(0);
@@ -52,11 +47,12 @@ const CardioVascularPrediction = (props) => {
 
     const fetchMetrics = async () => {
       console.log("fetching metrics")
-      console.log(csvData)
+      //console.log(csvData)
 
       try {
 
         const [headers, ...rows] = csvData;
+        console.log(headers)
         let formattedCsvData = rows.map(row =>
           headers.reduce((acc, header, index) => {
             acc[header] = row[index];
@@ -88,12 +84,6 @@ const CardioVascularPrediction = (props) => {
 
         const data = await CalculateMetricsForScore(finalData,'TenYearScore',thresholdDist);
 
-        // const y_true = finalData.map(row => row.Actual);
-        // const y_pred = finalData.map(row => row.Prediction);
-        // console.log(y_true + "--" + y_pred);
-
-        // const data = await CalculateMetrics(y_true, y_pred);
-
         const formatted = {
           summary_metrics: {
             overall_accuracy: data.Accuracy,
@@ -124,12 +114,13 @@ const CardioVascularPrediction = (props) => {
             measured: [80, 75, 95, 85, 78]
           },
           roc_curve: {
-            fpr: [0.0, 0.2, 0.4, 0.6, 0.8, 1.0],
-            tpr: [0.0, 0.2, 0.4, 0.6, 0.8, 1.0],
-            auc: 0.5
+            fpr: data.ROC_CURVE.fpr,
+            tpr: data.ROC_CURVE.tpr,
+            auc: data.AUROC
           }
         };
-
+        console.log("formatted data");
+        console.log(formatted);
         setMetricsData(formatted);
       } catch (err) {
         console.error("API fetch failed", err);
@@ -166,7 +157,7 @@ const CardioVascularPrediction = (props) => {
 
         const subgroupGenderResult = await CalculateSubgroupMetrics(
           formattedData,
-          'Gender',
+          'GENDER',
           true,
           thresholdDist
         );
@@ -244,7 +235,7 @@ const CardioVascularPrediction = (props) => {
       else ageGroups['60+']++;
   
       // Gender
-      const gender = row.Gender?.trim() || 'Unknown';
+      const gender = row.GENDER?.trim() || 'Unknown';
       genderCounts[gender] = (genderCounts[gender] || 0) + 1;
   
       // Race
@@ -298,17 +289,19 @@ const CardioVascularPrediction = (props) => {
   };
 
   const rocChart = {
-    labels: metricsData?.roc_curve.fpr || [],
     datasets: [
       {
         label: `ROC curve (area = ${metricsData?.roc_curve.auc.toFixed(2)})`,
-        data: metricsData?.roc_curve.tpr || [],
+        data: metricsData?.roc_curve.fpr.map((fpr, i) => ({
+          x: fpr,
+          y: metricsData.roc_curve.tpr[i]
+        })),
         borderColor: 'blue',
-        fill: false
+        fill: false,
+        tension: 0.1,
       }
     ]
   };
-
 
   const recalculateMetrics = (threshold) =>{
     setThresholdDist(threshold);
@@ -328,7 +321,7 @@ const CardioVascularPrediction = (props) => {
           </Button>
         </Box>
         <Typography variant="h5" gutterBottom>
-          Accuracy Metrics: CVD Prediction (Ten Year Score)
+          Accuracy Metrics: Cardiovascular Disease Prediction (Ten Year Score)
         </Typography>
 
         {metricsData && (
@@ -375,7 +368,6 @@ const CardioVascularPrediction = (props) => {
                       </Paper>
                     </Grid>
                   </Grid>
-                  {/* <SubgroupBarChart title="Age Group Recall" data={ageGroupMetrics} metricKey="Recall" /> */}
                 </Box>
               )}
 
