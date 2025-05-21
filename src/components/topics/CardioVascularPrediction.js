@@ -33,9 +33,6 @@ const CardioVascularPrediction = (props) => {
   const [raceDist, setRaceDist] = useState({});
   const [thresholdDist, setThresholdDist] = useState(20);
 
-  // const PREDICTION_SERVER = "http://54.166.135.219:5000";
-  const PREDICTION_SERVER = "http://localhost:5000";
-
   const handleCsvReady = (csv) => {
     console.log("CSV received in parent:", csv);
     setCsvData(csv);
@@ -62,19 +59,13 @@ const CardioVascularPrediction = (props) => {
 
         let result = formattedCsvData.map(row => ({
           ...row,
-          Prediction_Timestamp: new Date(row.Prediction_Timestamp),
           Actual: parseInt(row.ASCVD_Actual_Outcome)
         }));
         console.log("formatted csv data");
         console.log(formattedCsvData);
 
-        // Sort by Prediction_Timestamp and deduplicate by Patient_ID
-        const sorted = [...result].sort((a, b) =>
-          new Date(a.Prediction_Timestamp) - new Date(b.Prediction_Timestamp)
-        );
-
         const unique = new Map();
-        sorted.forEach(row => {
+        result.forEach(row => {
           unique.set(row.Patient_ID, row); // keeps last by timestamp due to sorting
         });
 
@@ -149,7 +140,6 @@ const CardioVascularPrediction = (props) => {
         
         let formattedData = formattedCsvData.map(row => ({
           ...row,
-          Prediction_Timestamp: new Date(row.Prediction_Timestamp),
           Actual: parseInt(row.ASCVD_Actual_Outcome)
         }));
         console.log("formatted csv data");
@@ -205,25 +195,8 @@ const CardioVascularPrediction = (props) => {
     const ageGroups = { '0-18': 0, '19-35': 0, '36-60': 0, '60+': 0 };
     const genderCounts = {};
     const raceCounts = {};
-
-    const deduplicatedMap = new Map();
-
-    data.forEach(row => {
-      const patientId = row.Patient_ID;
-      const currentTimestamp = new Date(row.Prediction_Timestamp);
   
-      if (!deduplicatedMap.has(patientId)) {
-        deduplicatedMap.set(patientId, row);
-      } else {
-        const existing = deduplicatedMap.get(patientId);
-        const existingTimestamp = new Date(existing.Prediction_Timestamp);
-        if (currentTimestamp > existingTimestamp) {
-          deduplicatedMap.set(patientId, row);
-        }
-      }
-    });
-  
-    const latestData = Array.from(deduplicatedMap.values());
+    const latestData = data;
   
     latestData.forEach((row) => {
       // Age calculation

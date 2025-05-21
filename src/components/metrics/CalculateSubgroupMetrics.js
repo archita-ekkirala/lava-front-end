@@ -2,24 +2,7 @@ import { CalculateMetrics } from './CalculateMetrics'; // adjust import path as 
 import { CalculateMetricsForScore } from './CalculateMetricsForScore';
 
 export async function CalculateSubgroupMetrics(data, selectedFeature,score,threshold) {
-  const deduplicatedMap = new Map();
-
-  data.forEach(row => {
-    const patientId = row.Patient_ID;
-    const currentTimestamp = new Date(row.Prediction_Timestamp);
-
-    if (!deduplicatedMap.has(patientId)) {
-      deduplicatedMap.set(patientId, row);
-    } else {
-      const existing = deduplicatedMap.get(patientId);
-      const existingTimestamp = new Date(existing.Prediction_Timestamp);
-      if (currentTimestamp > existingTimestamp) {
-        deduplicatedMap.set(patientId, row);
-      }
-    }
-  });
-
-  const latestData = Array.from(deduplicatedMap.values());
+  const latestData = data;
 
   const cleanedData = latestData.map(row => ({
     ...row,

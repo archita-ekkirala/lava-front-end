@@ -6,8 +6,6 @@ const ASCVDPredictionCsvFromFhir = ( {onCsvReady}) => {
 
   const FHIR_BASE = sessionStorage.getItem("serverUri");
   const BEARER_TOKEN = sessionStorage.getItem("token");
-//   const PREDICTION_SERVER = "http://54.166.135.219:5000";
-  const PREDICTION_SERVER = "http://localhost:5000";
 
   const headers = {
     Authorization: `Bearer ${BEARER_TOKEN}`,
@@ -34,10 +32,6 @@ const ASCVDPredictionCsvFromFhir = ( {onCsvReady}) => {
     const fetches = resourceTypes.map(async (type) => {
       let url = `${FHIR_BASE}/${type}?subject=Patient/${patientId}`;
 
-      // Add code filter for "2093-3" (Total Cholesterol) if resource type is Observation
-      if (type === "Observation") {
-          url += "&code=2093-3";
-      }
       const res = await fetch(url, { headers });
       const bundle = await res.json();
       return [type, (bundle.entry || []).map((e) => e.resource)];
@@ -47,26 +41,7 @@ const ASCVDPredictionCsvFromFhir = ( {onCsvReady}) => {
     return Object.fromEntries(results);
   };
 
-  const fetchPredictionsForPatient = async (patientId) => {
-    try {
-      const response = await fetch(PREDICTION_SERVER+"/get_prediction_by_patient", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ patient_id: patientId }),
-      });
-  
-      if (!response.ok) throw new Error("API error");
-  
-      const data = await response.json();
-      return data; // array of predictions
-    } catch (err) {
-      console.error(`Prediction fetch failed for ${patientId}`, err);
-      return [];
-    }
-  };
-  
-
-  const generateCSV = (patientsWithResources,predictionMap) => {
+  const generateCSV = (patientsWithResources) => {
     const flatRows = [];
 
     // Function to standardize and filter duplicate conditions
@@ -127,7 +102,6 @@ const ASCVDPredictionCsvFromFhir = ( {onCsvReady}) => {
           actualOutcome = 1;
         }
       });
-      const predictions = predictionMap.get(patient.identifier ? patient.identifier[0].value : patient.id) || [];
 
       resources.Observation?.forEach((obs) => {
         if (obs.code?.coding?.[0]?.code === "2093-3") {
@@ -142,13 +116,11 @@ const ASCVDPredictionCsvFromFhir = ( {onCsvReady}) => {
       });
   
       // Create rows for each set of observations
-      const maxRows = Math.max(predictions.length,total_cholesterol.length, hdl_cholesterol.length, systolic_bp.length);
+      const maxRows = Math.max(total_cholesterol.length, hdl_cholesterol.length, systolic_bp.length);
       for (let i = 0; i < maxRows; i++) {
-        const prediction = predictions[i] || {};
         const row = { ...baseRow };
   
         // Add the values for each observation in the current row
-        row["Prediction_Timestamp"]= prediction.prediction_timestamp ?prediction.prediction_timestamp : "3/15/2024";
         row["Birthdate"]= patient.birthDate;
         row["GENDER"]= patient.gender;
         row["Race"]= getRaceFromExtensions(patient.extension);
@@ -158,7 +130,6 @@ const ASCVDPredictionCsvFromFhir = ( {onCsvReady}) => {
         row["Conditions"]= getStandardizedConditions(resources.Condition || []);
         row["Medications"] = "";
         row["ASCVD_Actual_Outcome"] = actualOutcome;
-        row["Predicted_Outcome"]= prediction.predicted_outcome ? prediction.predicted_outcome : 0;
 
         // Add ten-year score calculation
         const patientInfo = {
@@ -226,19 +197,17 @@ const ASCVDPredictionCsvFromFhir = ( {onCsvReady}) => {
               }
 
               const pct = (1 - (s010Ret ** Math.exp(predictRet - mnxbRet)));
-              return Math.round((pct * 100) * 10) / 10;
+              return Math.round((pct * 100) * 10);
             };
 
             row["TenYearScore"] = calculateScore();
-
             flatRows.push(row);
           }
       });
   
     // Create CSV headers dynamically
-    const headers = ["Patient_ID", 
-      "Prediction_Timestamp","Birthdate", 
-      "GENDER", "Race",  "Total_Cholesterol", "HDL_Cholesterol", "Systolic_Blood_Pressure","Conditions","ASCVD_Actual_Outcome","Predicted_Outcome", "TenYearScore" ];
+    const headers = ["Patient_ID", "Birthdate", 
+      "GENDER", "Race",  "Total_Cholesterol", "HDL_Cholesterol", "Systolic_Blood_Pressure","Conditions","ASCVD_Actual_Outcome", "TenYearScore" ];
   
     // Generate CSV content
     const csvRows = [
@@ -288,15 +257,12 @@ const ASCVDPredictionCsvFromFhir = ( {onCsvReady}) => {
         for (let i = 0; i < patients.length; i += BATCH_SIZE) {
           const batch = patients.slice(i, i + BATCH_SIZE);
 
-         // Fetch resources and predictions in parallel for each batch
+         // Fetch resources in parallel for each batch
          const batchFetch = Promise.all(
             batch.map(async (patient) => {
               console.log(patient);
               const resources = await fetchPatientResources(patient.id);
-              const predictions = patient.identifier
-                ? await fetchPredictionsForPatient(patient.identifier[0].value)
-                : [];
-              return { patient, resources, predictions };
+              return { patient, resources };
             })
           );
 
@@ -307,14 +273,7 @@ const ASCVDPredictionCsvFromFhir = ( {onCsvReady}) => {
         const results = await Promise.all(batches);
         
         const allPatientsWithResources = results.flat();
-        const predictionMap = new Map();
-        allPatientsWithResources.forEach(({ patient, predictions }) => {
-          if (patient.identifier) {
-            predictionMap.set(patient.identifier[0].value, predictions);
-          }
-        });
-  
-        generateCSV(allPatientsWithResources, predictionMap);
+        generateCSV(allPatientsWithResources);
       } catch (err) {
         console.error("Error:", err);
       } finally {
