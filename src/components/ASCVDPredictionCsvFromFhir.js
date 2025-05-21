@@ -207,7 +207,7 @@ const ASCVDPredictionCsvFromFhir = ( {onCsvReady}) => {
   
     // Create CSV headers dynamically
     const headers = ["Patient_ID", "Birthdate", 
-      "Gender", "Race",  "Total_Cholesterol", "HDL_Cholesterol", "Systolic_Blood_Pressure","Conditions","ASCVD_Actual_Outcome", "TenYearScore" ];
+      "Gender", "Race",  "Total_Cholesterol", "HDL_Cholesterol", "Systolic_Blood_Pressure","Conditions","Actual_Outcome", "TenYearScore" ];
   
     // Generate CSV content
     const csvRows = [
