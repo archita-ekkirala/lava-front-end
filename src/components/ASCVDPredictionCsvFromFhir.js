@@ -122,14 +122,14 @@ const ASCVDPredictionCsvFromFhir = ( {onCsvReady}) => {
   
         // Add the values for each observation in the current row
         row["Birthdate"]= patient.birthDate;
-        row["GENDER"]= patient.gender;
+        row["Gender"]= patient.gender;
         row["Race"]= getRaceFromExtensions(patient.extension);
         row["Total_Cholesterol"] = total_cholesterol[i] || "";
         row["HDL_Cholesterol"] = hdl_cholesterol[i] || "";
         row["Systolic_Blood_Pressure"] = systolic_bp[i] || "";
         row["Conditions"]= getStandardizedConditions(resources.Condition || []);
         row["Medications"] = "";
-        row["ASCVD_Actual_Outcome"] = actualOutcome;
+        row["Actual_Outcome"] = actualOutcome;
 
         // Add ten-year score calculation
         const patientInfo = {
@@ -207,7 +207,7 @@ const ASCVDPredictionCsvFromFhir = ( {onCsvReady}) => {
   
     // Create CSV headers dynamically
     const headers = ["Patient_ID", "Birthdate", 
-      "GENDER", "Race",  "Total_Cholesterol", "HDL_Cholesterol", "Systolic_Blood_Pressure","Conditions","ASCVD_Actual_Outcome", "TenYearScore" ];
+      "Gender", "Race",  "Total_Cholesterol", "HDL_Cholesterol", "Systolic_Blood_Pressure","Conditions","ASCVD_Actual_Outcome", "TenYearScore" ];
   
     // Generate CSV content
     const csvRows = [

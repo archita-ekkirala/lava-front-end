@@ -11,26 +11,14 @@ import {
   Tooltip,
   Legend
 } from 'chart.js';
-import { CalculateSubgroupMetrics } from '../metrics/CalculateSubgroupMetrics';
-import SubgroupBarChart from '../charts/SubgroupBarChart';
-import MetricsSection from '../charts/MetricsSection';
-import DistributionCharts from '../charts/DistributionCharts';
-import { CalculateMetricsForScore } from '../metrics/CalculateMetricsForScore';
 import ASCVDPredictionCsvFromFhir from '../ASCVDPredictionCsvFromFhir';
+import Prediction from '../views/Prediction';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend);
 
 const CardioVascularPrediction = (props) => {
   const [tab, setTab] = useState(0);
-  const [metricsData, setMetricsData] = useState(null);
-  const [subGroupMetricsData, setSubGroupMetricsData] = useState(null);
-  const [genderMetrics, setGenderMetrics] = useState(null);
-  const [raceMetrics, setRaceMetrics] = useState(null);
-  const { goBack } = props;
   const [csvData, setCsvData] = useState("");
-  const [ageGroupDist, setAgeGroupDist] = useState({});
-  const [genderDist, setGenderDist] = useState({});
-  const [raceDist, setRaceDist] = useState({});
   const [thresholdDist, setThresholdDist] = useState(20);
 
   const handleCsvReady = (csv) => {
@@ -38,322 +26,39 @@ const CardioVascularPrediction = (props) => {
     setCsvData(csv);
   };
 
-  const handleTabChange = (event, newValue) => setTab(newValue);
-
-  useEffect(() => {
-
-    const fetchMetrics = async () => {
-      console.log("fetching metrics")
-      //console.log(csvData)
-
-      try {
-
-        const [headers, ...rows] = csvData;
-        console.log(headers)
-        let formattedCsvData = rows.map(row =>
-          headers.reduce((acc, header, index) => {
-            acc[header] = row[index];
-            return acc;
-          }, {})
-        );
-
-        let result = formattedCsvData.map(row => ({
-          ...row,
-          Actual: parseInt(row.ASCVD_Actual_Outcome)
-        }));
-        console.log("formatted csv data");
-        console.log(formattedCsvData);
-
-        const unique = new Map();
-        result.forEach(row => {
-          unique.set(row.Patient_ID, row); // keeps last by timestamp due to sorting
-        });
-
-        const finalData = Array.from(unique.values());
-        console.log("finalData csv data");
-        console.log(finalData);
-
-        const data = await CalculateMetricsForScore(finalData,'TenYearScore',thresholdDist);
-
-        const formatted = {
-          summary_metrics: {
-            overall_accuracy: data.Accuracy,
-            alert_reliability: data.Precision,
-            need_detection_rate: data.Recall,
-            balanced_score: data["F1 Score"]
-          },
-          confusion_matrix: {
-            true_positive: data["True Positive"],
-            false_negative: data["False Negative"],
-            false_positive: data["False Positive"],
-            true_negative: data["True Negative"],
-            true_positive_rate: data["True Positive Rate"].toFixed(2),
-            true_negative_rate: data["True Negative Rate"].toFixed(2),
-            false_positive_rate: data["False Positive Rate"].toFixed(2),
-            false_negative_rate: data["False Negative Rate"].toFixed(2)
-          },
-          detailed_metrics: {
-            accuracy: data.Accuracy,
-            precision: data.Precision,
-            recall: data.Recall,
-            f1_score: data["F1 Score"],
-            brier_score: data["Brier Score"]
-          },
-          accuracy_over_time: {
-            months: ['Jan 2024', 'Apr 2024', 'Jul 2024', 'Oct 2024', 'Jan 2025'],
-            claimed: [90, 90, 90, 90, 90],
-            measured: [80, 75, 95, 85, 78]
-          },
-          roc_curve: {
-            fpr: data.ROC_CURVE.fpr,
-            tpr: data.ROC_CURVE.tpr,
-            auc: data.AUROC
-          }
-        };
-        console.log("formatted data");
-        console.log(formatted);
-        setMetricsData(formatted);
-      } catch (err) {
-        console.error("API fetch failed", err);
-      }
-    };
-    if (csvData && csvData.length > 0 && tab === 0) {
-      console.log("csvData found")
-      fetchMetrics();
+  const gridLabels = [
+    { label: 'Overall Accuracy', 
+      field: 'overall_accuracy', 
+       format: v => `${(v * 100).toFixed(1)}%`,
+       tooltip: "How often the model's predictions are correct overall",
+       info:"Correct predictions"
+    },
+    { label: 'CVD Prediction Reliability', 
+      field: 'alert_reliability',
+       format: v => `${(v * 100).toFixed(1)}%`,
+        tooltip: 'When the model says "yes",how often is it actually right?',
+        info:"% of predictive positives correct"
+    },
+    { label: 'CVD Prediction detection Rate', 
+      field: 'need_detection_rate', 
+      format: v => `${(v * 100).toFixed(1)}%`,
+       tooltip: 'How well the model finds all the actual "yes" cases.' ,
+      info:"% of actual positives detected"
+    },
+    { label: 'Balanced CVD Prediction score', 
+      field: 'balanced_score', 
+      format: v => v.toFixed(2), 
+      tooltip: "A balance between precision and recall, showing overall model effectiveness." ,
+      info:"Harmonic means of precision and recall"
     }
-  }, [csvData, tab,thresholdDist]);
+  ];
 
-  // useEffect(() => {
-  //   handleCsvReady(cvd_csv);
-  // }, []);
-
-  useEffect(() => {
-    const runSubgroup = async () => {
-      if (csvData && csvData.length > 0 && tab === 1) {
-        const [headers, ...rows] = csvData;
-        let formattedCsvData = rows.map(row =>
-          headers.reduce((acc, header, index) => {
-            acc[header] = row[index];
-            return acc;
-          }, {})
-        );
-        
-        let formattedData = formattedCsvData.map(row => ({
-          ...row,
-          Actual: parseInt(row.ASCVD_Actual_Outcome)
-        }));
-        console.log("formatted csv data");
-        console.log(formattedData);
-
-        const subgroupGenderResult = await CalculateSubgroupMetrics(
-          formattedData,
-          'GENDER',
-          true,
-          thresholdDist
-        );
-
-        console.log('Subgroup Gender Metrics:', subgroupGenderResult);
-        const subgroupRaceResult = await CalculateSubgroupMetrics(
-          formattedData,
-          'Race',
-          true,
-          thresholdDist
-        );
-        console.log('Subgroup Race Metrics:', subgroupRaceResult);
-        setGenderMetrics(subgroupGenderResult);
-        setRaceMetrics(subgroupRaceResult);
-      }
-    };
-
-    runSubgroup();
-  }, [csvData, tab,thresholdDist]);
-
-  useEffect(() => {
-    const runDistributions = async () => {
-      if (csvData && csvData.length > 0 && tab === 2) {
-        const [headers, ...rows] = csvData;
-        let formattedCsvData = rows.map(row =>
-          headers.reduce((acc, header, index) => {
-            acc[header] = row[index];
-            return acc;
-          }, {})
-        );
-        console.log(formattedCsvData)
-        const {ageGroups,genderCounts,raceCounts} = calculateDistributions(formattedCsvData);
-        console.log(ageGroups);
-        setAgeGroupDist(ageGroups);
-        console.log(genderCounts);  
-        setGenderDist(genderCounts);      
-        console.log(raceCounts);
-        setRaceDist(raceCounts);
-      }
-    }
-    runDistributions()
-  }, [csvData, tab,thresholdDist]);
-
-  const calculateDistributions = (data) => {
-    const ageGroups = { '0-18': 0, '19-35': 0, '36-60': 0, '60+': 0 };
-    const genderCounts = {};
-    const raceCounts = {};
-  
-    const latestData = data;
-  
-    latestData.forEach((row) => {
-      // Age calculation
-      const birthDate = new Date(row.Birthdate);
-      const age = new Date().getFullYear() - birthDate.getFullYear();
-      if (age <= 18) ageGroups['0-18']++;
-      else if (age <= 35) ageGroups['19-35']++;
-      else if (age <= 60) ageGroups['36-60']++;
-      else ageGroups['60+']++;
-  
-      // Gender
-      const gender = row.GENDER?.trim() || 'Unknown';
-      genderCounts[gender] = (genderCounts[gender] || 0) + 1;
-  
-      // Race
-      const race = row.Race?.trim() || 'Unknown';
-      raceCounts[race] = (raceCounts[race] || 0) + 1;
-    });
-  
-    return { ageGroups, genderCounts, raceCounts };
-  };
-
-  const metrics = metricsData ? [
-    { label: 'Overall Accuracy', value: `${(metricsData.summary_metrics.overall_accuracy * 100).toFixed(1)}%` },
-    { label: 'CVD Prediction Reliability', value: `${(metricsData.summary_metrics.alert_reliability * 100).toFixed(1)}%` },
-    { label: 'CVD Prediction detection Rate', value: `${(metricsData.summary_metrics.need_detection_rate * 100).toFixed(1)}%` },
-    { label: 'Balanced CVD Prediction score', value: metricsData.summary_metrics.balanced_score.toFixed(2) }
-  ] : [];
-
-  const accuracyChart = {
-    labels: metricsData?.accuracy_over_time.months || [],
-    datasets: [
-      {
-        label: 'Claimed Accuracy',
-        data: metricsData?.accuracy_over_time.claimed || [],
-        borderColor: 'blue',
-        fill: false
-      },
-      {
-        label: 'Measured Accuracy',
-        data: metricsData?.accuracy_over_time.measured || [],
-        borderColor: 'red',
-        fill: false
-      }
-    ]
-  };
-
-  const barChartData = {
-    labels: ['Accuracy', 'Precision', 'Recall', 'F1 Score', 'Brier Score'],
-    datasets: [
-      {
-        label: 'Score',
-        data: metricsData ? [
-          metricsData.detailed_metrics.accuracy,
-          metricsData.detailed_metrics.precision,
-          metricsData.detailed_metrics.recall,
-          metricsData.detailed_metrics.f1_score,
-          metricsData.detailed_metrics.brier_score
-        ] : [],
-        backgroundColor: ['#d0e7f9', '#a5cbe2', '#7fb0cc', '#5894b6', '#3379a0']
-      }
-    ]
-  };
-
-  const rocChart = {
-    datasets: [
-      {
-        label: `ROC curve (area = ${metricsData?.roc_curve.auc.toFixed(2)})`,
-        data: metricsData?.roc_curve.fpr.map((fpr, i) => ({
-          x: fpr,
-          y: metricsData.roc_curve.tpr[i]
-        })),
-        borderColor: 'blue',
-        fill: false,
-        tension: 0.1,
-      }
-    ]
-  };
-
-  const recalculateMetrics = (threshold) =>{
-    setThresholdDist(threshold);
-  }
   return (
     <div>
       <ASCVDPredictionCsvFromFhir onCsvReady={handleCsvReady} />
-      <Box p={4} m={2} width="calc(100%-32px)" margin="20px"
-        display="flex"
-        flexDirection="column"
-        alignItems="center"
-        textAlign="center"
-      >
-        <Box width="100%" mb={2} display="flex" justifyContent="flex-start">
-          <Button variant="outlined" onClick={goBack}>
-            ← Back
-          </Button>
-        </Box>
-        <Typography variant="h5" gutterBottom>
-          Accuracy Metrics: Cardiovascular Disease Prediction (Ten Year Score)
-        </Typography>
-
-        {metricsData && (
-          <>
-            <Grid container spacing={2} justifyContent="flex-start" width="100%">
-              {metrics.map((metric, i) => (
-                <Grid item key={i} width="20%">
-                  <Card>
-                    <CardContent>
-                      <Typography variant="body2" color="textSecondary">
-                        {metric.label}
-                      </Typography>
-                      <Typography variant="h6">{metric.value}</Typography>
-                    </CardContent>
-                  </Card>
-                </Grid>
-              ))}
-            </Grid> 
-           
-
-
-            <Box mt={4} width="100%">
-              <Box display="flex" justifyContent="left">
-                <Tabs value={tab} onChange={handleTabChange} indicatorColor="primary" textColor="primary">
-                  <Tab label="Performance Metrics" />
-                  <Tab label="Subgroup Analysis" />
-                  <Tab label="Data Distribution" />
-                </Tabs>
-              </Box>
-              {tab === 0 && (
-                <MetricsSection topic="CVD" metricsData={metricsData} accuracyChart={accuracyChart} barChartData={barChartData} rocChart={rocChart} recalculateMetrics={recalculateMetrics}/>
-              )}
-              {tab === 1 && (
-                <Box mt={4}>
-                  <Grid container spacing={4} justifyContent="center">
-                    <Grid item xs={12} md={8} width="45%">
-                      <Paper elevation={2} style={{ padding: '16px', height: '100%' }}>
-                        <SubgroupBarChart title="Gender-wise Visualization" rawData={genderMetrics} selectedFeature="Gender" />
-                      </Paper>
-                    </Grid>
-                    <Grid item xs={12} md={8} width="45%">
-                      <Paper elevation={2} style={{ padding: '16px', height: '100%' }}>
-                        <SubgroupBarChart title="Race-wise Precision" rawData={raceMetrics} selectedFeature="Race" />
-                      </Paper>
-                    </Grid>
-                  </Grid>
-                </Box>
-              )}
-
-              {tab === 2 && (
-                <Box mt={4}>
-                  <h5 align="left">Patient Demographic Distribution</h5>
-                  <DistributionCharts ageGroups={ageGroupDist} genderCounts={genderDist} raceCounts={raceDist} />
-                </Box>
-              )}
-            </Box>
-          </>
-        )}
-      </Box>
+      { csvData && csvData.length > 0 && (
+        <Prediction csvData={csvData} gridLabels={gridLabels} topic="CardioVascularDisease Prediction" score="TenYearScore"/>
+      )}
     </div>
   );
 };

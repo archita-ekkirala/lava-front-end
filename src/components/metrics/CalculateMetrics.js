@@ -47,6 +47,7 @@ export async function CalculateMetrics(yTrue, yPredOriginal) {
     const { metrics, model_selection } = sk;
 
     const yPred = [...yPredOriginal];
+    console.log("yTrue---" + yTrue)
     console.log("yPred---" + yPred)
 
     for (let i = 0; i < yPred.length; i++) {
@@ -57,16 +58,34 @@ export async function CalculateMetrics(yTrue, yPredOriginal) {
 
     console.log(yTrue, yPred, { labels: [0, 1] })
 
+    const uniqueClasses = new Set(yTrue);
+    if (uniqueClasses.size < 2) {
+    console.warn('Skipping metrics: Only one class present in yTrue:', [...uniqueClasses]);
+    return {
+        tp: 0,
+        tn: 0,
+        fp: 0,
+        fn: 0,
+        note: 'Confusion matrix skipped — only one class in yTrue',
+    };
+    }
+
     const cm = await metrics.confusionMatrix(yTrue, yPred, { labels: [0, 1] });
 
     let tn, fp, fn, tp;
 
-    if (cm.length === 2 && cm[0].length === 2) {
+    if (cm.length === 2 && cm[0].length === 2 && cm[1].length === 2) {
         tn = cm[0][0];
         fp = cm[0][1];
         fn = cm[1][0];
         tp = cm[1][1];
-    } else {
+    } else if (cm.length === 1 && cm[0].length === 2) {
+        tn = cm[0][0];
+        fp = cm[0][1];
+      } else if (cm.length === 2 && cm[1].length === 1) {
+        tn = cm[0][0] || 0;
+        fn = cm[1][0] || 0;
+      }else {
         tn = cm[0]?.[0] || 0;
         fp = cm[0]?.[1] || 0;
         fn = cm[1]?.[0] || 0;

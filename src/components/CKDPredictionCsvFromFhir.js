@@ -132,14 +132,14 @@ const CKDPredictionCsvFromFhir = ({ onCsvReady }) => {
         row["Prediction_Timestamp"] = prediction.prediction_timestamp ? prediction.prediction_timestamp : "3/15/2024";
         row["Predicted_Probability"] = prediction.predicted_prob ? prediction.predicted_prob : "0.21";
         row["Birthdate"] = patient.birthDate;
-        row["GENDER"] = patient.gender;
+        row["Gender"] = patient.gender;
         row["Race"] = getRaceFromExtensions(patient.extension);
         row["HbA1c (%)"] = hbA1cValues[i] || "";
         row["eGFR"] = eGFRValues[i] || "";
         row["UACR"] = uacrValues[i] || "";
         row["Conditions"] = getStandardizedConditions(resources.Condition || []);
         row["Medications"] = "";
-        row["CKD_Actual_Outcome"] = actualOutcome;
+        row["Actual_Outcome"] = actualOutcome;
         row["Predicted_Outcome"] = prediction.predicted_outcome ? prediction.predicted_outcome : 0;
 
         flatRows.push(row);
@@ -149,7 +149,7 @@ const CKDPredictionCsvFromFhir = ({ onCsvReady }) => {
     // Create CSV headers dynamically
     const headers = ["Patient_ID",
       "Prediction_Timestamp", "Predicted_Probability", "Birthdate",
-      "GENDER", "Race", "HbA1c (%)", "eGFR", "UACR", "Conditions", "CKD_Actual_Outcome", "Predicted_Outcome",];
+      "Gender", "Race", "HbA1c (%)", "eGFR", "UACR", "Conditions", "Actual_Outcome", "Predicted_Outcome",];
 
     // Generate CSV content
     const csvRows = [

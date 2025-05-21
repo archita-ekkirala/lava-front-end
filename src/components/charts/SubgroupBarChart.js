@@ -19,6 +19,7 @@ function transformSubgroupMetricsData(rawData) {
 }
 
 const SubgroupBarChart = ({ rawData, selectedFeature }) => {
+  console.log("SubgroupBarChart")
   console.log(rawData);
   if (!rawData || rawData.length === 0) return null;
 
@@ -50,7 +51,7 @@ const SubgroupBarChart = ({ rawData, selectedFeature }) => {
             <Bar
               key={subgroup}
               dataKey={subgroup}
-              fill={colors[i % colors.length]} // Cycle through colors
+              fill={colors[i % colors.length]} 
             >
               <LabelList
                 dataKey={subgroup}

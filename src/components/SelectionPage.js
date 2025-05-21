@@ -19,7 +19,7 @@ const SelectionPage = ({ onSubmit }) => {
         <Typography variant="body1" gutterBottom>Pick a DSI Application</Typography>
         <Select value={vendor} onChange={(e) => setVendor(e.target.value)} displayEmpty>
           <MenuItem value="">Select a vendor</MenuItem>
-          <MenuItem value="Vendor1">DSI Vendor1</MenuItem>
+          <MenuItem value="Vendor1">Cerner</MenuItem>
           <MenuItem value="Vendor2">DSI Vendor2</MenuItem>
         </Select>
       </FormControl>
