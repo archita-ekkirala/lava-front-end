@@ -1,22 +1,23 @@
-import React, { useState,useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
+import { AppBar, Toolbar, Typography, Button, Box } from '@mui/material';
 import SelectionPage from './SelectionPage';
 import CKDPrediction from './topics/CKDPrediction';
-import HeartFailurePrediction from './topics/HeartFailurePrediction';
 import HospitalizationRiskPrediction from './topics/HospitalizationRiskPrediction';
-import * as tf from '@tensorflow/tfjs'
-import * as sk from 'scikitjs'
 import CardioVascularPrediction from './topics/CardioVascularPrediction';
+import * as tf from '@tensorflow/tfjs';
+import * as sk from 'scikitjs';
+import { useAppContext } from '../context/AppContext';
 
 const Lava = () => {
-  const [selection, setSelection] = useState(null);
-  const goBack = () => setSelection(null);
-
+  //const [selection, setSelection] = useState(null);
+  const {activePage, setActivePage,selection,setSelection} = useAppContext();
   const [ready, setReady] = useState(false);
+
 
   useEffect(() => {
     async function initScikit() {
-      sk.setBackend(tf); // Set TensorFlow.js as backend
-      setReady(true); // Mark scikit.js as ready
+      sk.setBackend(tf); 
+      setReady(true); 
     }
     initScikit();
   }, []);
@@ -26,23 +27,56 @@ const Lava = () => {
   const renderTopicComponent = () => {
     switch (selection.topic) {
       case 'CKD':
-        return <CKDPrediction goBack={goBack}/>;
+        return <CKDPrediction />;
       case 'CardioVascularPrediction':
-        return <CardioVascularPrediction goBack={goBack}/>;
+        return <CardioVascularPrediction />;
       case 'HospitalizationRisk':
-        return <HospitalizationRiskPrediction goBack={goBack}/>;
+        return <HospitalizationRiskPrediction />;
       default:
         return <div>Coming Soon...</div>;
     }
   };
 
-  return (
-    <div>
-      {!selection ? (
+  const renderContent = () => {
+    if (activePage === 'Dashboard') {
+      return !selection ? (
         <SelectionPage onSubmit={setSelection} />
       ) : (
         renderTopicComponent()
-      )}
+      );
+    } else if (activePage === 'ModelAnalysis') {
+      return !selection ? (
+        <SelectionPage onSubmit={setSelection} />
+      ) : (
+        renderTopicComponent()
+      );
+    } else if (activePage === 'Settings') {
+      return <div>Settings Page Coming Soon...</div>;
+    }
+  };
+
+  return (
+    <div>
+      {/* Top Menu Bar */}
+      <AppBar position="static" sx={{ backgroundColor: '#275786' }}>
+        <Toolbar>
+          <Typography variant="h6" sx={{ flexGrow: 1 }}>
+            Lava Application
+          </Typography>
+          <Button color="inherit" onClick={() => {setSelection(null);setActivePage('Dashboard')}}>
+            Dashboard
+          </Button>
+          <Button color="inherit" onClick={() => {setActivePage('ModelAnalysis')}}>
+            Model Analysis
+          </Button>
+          <Button color="inherit" onClick={() => setActivePage('Settings')}>
+            Settings
+          </Button>
+        </Toolbar>
+      </AppBar>
+
+      {/* Main Content */}
+      <Box mt={2}>{renderContent()}</Box>
     </div>
   );
 };

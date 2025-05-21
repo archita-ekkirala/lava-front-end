@@ -3,12 +3,24 @@ import { Grid, Paper, Typography, Box, Select, MenuItem, FormControl, InputLabel
 import { Bar, Line } from 'react-chartjs-2';
 
 const MetricsSection = ({ topic, metricsData, accuracyChart, barChartData, rocChart, recalculateMetrics }) => {
-    const [threshold, setThreshold] = useState(20); // Default threshold value
+    const [threshold, setThreshold] = useState(20); 
+
+    const total = metricsData.confusion_matrix.true_positive +
+        metricsData.confusion_matrix.false_negative +   
+            metricsData.confusion_matrix.false_positive +   
+                metricsData.confusion_matrix.true_negative;
+
+    const percent = (value) => {
+        if (total === 0) return 0;
+        return ((value / total) * 100).toFixed(1) + '%';
+    };
+
 
     const getTitle = () => {
-        if (topic === "CKD") {
-            return "Admission Decision Breakdown";
-        } else if (topic === "CVD") {
+        console.log("topic---" + topic)
+        if (topic.includes("CKD")) {
+            return "CKD Risk Breakdown";
+        } else if (topic.includes("CardioVascularDisease")) {
             return "Cardiovascular Risk Breakdown";
         } else {
             return "Metrics Breakdown";
@@ -18,7 +30,7 @@ const MetricsSection = ({ topic, metricsData, accuracyChart, barChartData, rocCh
     const handleThresholdChange = (event) => {
         const newThreshold = event.target.value;
         setThreshold(newThreshold);
-        recalculateMetrics(newThreshold); // Call the function to recalculate metrics
+        recalculateMetrics(newThreshold); 
     };
 
     return (
@@ -29,24 +41,12 @@ const MetricsSection = ({ topic, metricsData, accuracyChart, barChartData, rocCh
                     <Paper elevation={2} style={{ padding: 16, height: '100%' }}>
                         <Box display="flex" justifyContent="space-between" alignItems="center">
                             <Typography variant="subtitle1" align="left" gutterBottom>
-                                {getTitle()} {/* Dynamically set the title */}
+                                {getTitle()} 
                             </Typography>
-                            {/* <FormControl size="small" style={{ minWidth: 120 }}>
-                                <InputLabel>Threshold</InputLabel>
-                                <Select
-                                    value={threshold}
-                                    onChange={handleThresholdChange}
-                                    label="Threshold"
-                                >
-                                    <MenuItem value={20}>20</MenuItem>
-                                    <MenuItem value={40}>40</MenuItem>
-                                    <MenuItem value={60}>60</MenuItem>
-                                </Select>
-                            </FormControl> */}
                         </Box>
                         <Box
                             display="grid"
-                            gridTemplateColumns="repeat(2, 1fr)" // Two equal columns
+                            gridTemplateColumns="repeat(2, 1fr)" 
                             gap={2}
                         >
                             <Box
@@ -58,7 +58,8 @@ const MetricsSection = ({ topic, metricsData, accuracyChart, barChartData, rocCh
                             >
                                 <div>
                                     <Typography variant="h6">
-                                        {metricsData.confusion_matrix.true_positive} ({metricsData.confusion_matrix.true_positive_rate}%)
+                                        {metricsData.confusion_matrix.true_positive} 
+                                        ({percent(metricsData.confusion_matrix.true_positive)})
                                     </Typography>
                                     <Typography variant="body2">Correctly predicted</Typography>
                                 </div>
@@ -72,7 +73,8 @@ const MetricsSection = ({ topic, metricsData, accuracyChart, barChartData, rocCh
                             >
                                 <div>
                                     <Typography variant="h6">
-                                        {metricsData.confusion_matrix.false_negative} ({metricsData.confusion_matrix.false_negative_rate}%)
+                                        {metricsData.confusion_matrix.false_negative} 
+                                        ({percent(metricsData.confusion_matrix.false_negative)})
                                     </Typography>
                                     <Typography variant="body2">Missed Predictions</Typography>
                                 </div>
@@ -86,7 +88,8 @@ const MetricsSection = ({ topic, metricsData, accuracyChart, barChartData, rocCh
                             >
                                 <div>
                                     <Typography variant="h6">
-                                        {metricsData.confusion_matrix.false_positive} ({metricsData.confusion_matrix.false_positive_rate}%)
+                                        {metricsData.confusion_matrix.false_positive} 
+                                        ({percent(metricsData.confusion_matrix.false_positive)})
                                     </Typography>
                                     <Typography variant="body2">Wrongly predicted positive</Typography>
                                 </div>
@@ -100,7 +103,8 @@ const MetricsSection = ({ topic, metricsData, accuracyChart, barChartData, rocCh
                             >
                                 <div>
                                     <Typography variant="h6">
-                                        {metricsData.confusion_matrix.true_negative} ({metricsData.confusion_matrix.true_negative_rate}%)
+                                        {metricsData.confusion_matrix.true_negative} 
+                                        ({percent(metricsData.confusion_matrix.true_negative)})
                                     </Typography>
                                     <Typography variant="body2">Correctly predicted negative</Typography>
                                 </div>
@@ -118,7 +122,7 @@ const MetricsSection = ({ topic, metricsData, accuracyChart, barChartData, rocCh
                             plugins: {
                                 legend: {
                                     display: true,
-                                    position: 'bottom', // Position the legend at the bottom
+                                    position: 'bottom', 
                                 },
                             },
                             scales: {
@@ -136,7 +140,7 @@ const MetricsSection = ({ topic, metricsData, accuracyChart, barChartData, rocCh
                                     },
                                     title: {
                                         display: true,
-                                        text: 'Observed Frequency', // Y-axis label
+                                        text: 'Observed Frequency', 
                                         font: { size: 14 }
                                       }
                                 },

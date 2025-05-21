@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import Lava from "./components/Lava";
+import { AppProvider } from "./context/AppContext";
 
 function getUrlParams() {
   const params = {};
@@ -110,7 +111,7 @@ function App() {
 
   return (
     <div style={{ paddingLeft: "2rem", fontSize: "1.2rem", alignItems:"center" }}>
-      {isAuthorized ? <Lava /> : message}
+      {isAuthorized ? <AppProvider><Lava /> </AppProvider>: message}
     </div>
   );
 }

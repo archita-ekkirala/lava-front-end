@@ -197,7 +197,7 @@ def convert_csv_to_fhir_bundle(csv_path):
                         bundle.entry.append(BundleEntry(resource= cond))
                         seen_conditions[pid].add(each.lower())
 
-            cond = generate_ckd_condition(server_patient_id,row['CKD_Actual_Outcome'],row['Prediction_Timestamp'])
+            cond = generate_ckd_condition(server_patient_id,row['Actual_Outcome'],row['Prediction_Timestamp'])
             if cond:
                 bundle.entry.append(BundleEntry(resource=cond))
                 post_resource(cond)
