@@ -18,7 +18,7 @@ const CKDPredictionCsvFromFhir = ({ onCsvReady }) => {
   const fetchAllPatients = async () => {
     try {
       let allPatients = [];
-      let nextUrl = `${FHIR_BASE}/Patient?_count=300`;
+      let nextUrl = `${FHIR_BASE}/Patient?_count=50`;
       while (nextUrl) {
         const res = await fetch(nextUrl, { headers });
         if (!res.ok) {
@@ -31,6 +31,7 @@ const CKDPredictionCsvFromFhir = ({ onCsvReady }) => {
         const nextLink = bundle.link?.find((l) => l.relation === "next");
         nextUrl = nextLink ? nextLink.url : null;
       }
+
       return allPatients;
     }catch (error) {
       setErrorMessage(error.message); // Set the error message
@@ -40,14 +41,30 @@ const CKDPredictionCsvFromFhir = ({ onCsvReady }) => {
 
   const fetchPatientResources = async (patientId) => {
     const resourceTypes = ["Observation", "Condition"];
-    const fetches = resourceTypes.map(async (type) => {
-      const res = await fetch(`${FHIR_BASE}/${type}?subject=Patient/${patientId}`, { headers });
-      const bundle = await res.json();
-      return [type, (bundle.entry || []).map((e) => e.resource)];
-    });
+    const allResources = {};
 
-    const results = await Promise.all(fetches);
-    return Object.fromEntries(results);
+    for (const type of resourceTypes) {
+      let nextUrl = `${FHIR_BASE}/${type}?subject=Patient/${patientId}&_count=5`;
+      let resources = [];
+
+      while (nextUrl) {
+        const res = await fetch(nextUrl, { headers });
+        if (!res.ok) {
+          throw new Error(`Failed to fetch ${type} for patient ${patientId}: ${res.statusText}`);
+        }
+
+        const bundle = await res.json();
+        const entries = bundle.entry || [];
+        resources = [...resources, ...entries.map((e) => e.resource)];
+
+        const nextLink = bundle.link?.find((l) => l.relation === "next");
+        nextUrl = nextLink ? nextLink.url : null;
+      }
+
+      allResources[type] = resources;
+    }
+
+    return allResources;
   };
 
   const fetchPredictionsForPatient = async (patientId) => {
