@@ -19,7 +19,8 @@ import {
 import { CalculateMetrics } from '../metrics/CalculateMetrics';
 import CKDPredictionCsvFromFhir from '../CKDPredictionCsvFromFhir';
 import { CalculateSubgroupMetrics } from '../metrics/CalculateSubgroupMetrics';
-import {CalculateSubgroupAgeMetrics} from '../metrics/CalculateSubgroupAgeMetrics';
+import { CalculateSubgroupAgeMetrics } from '../metrics/CalculateSubgroupAgeMetrics';
+import { calculateCalibrationData } from '../charts/CalibrationCurve';
 import SubgroupBarChart from '../charts/SubgroupBarChart';
 import MetricsSection from '../charts/MetricsSection';
 import DistributionCharts from '../charts/DistributionCharts';
@@ -32,7 +33,6 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarEleme
 const Prediction = ({csvData,topic,score}) => {
   const [tab, setTab] = useState(0);
   const [metricsData, setMetricsData] = useState(null);
-  const [subGroupMetricsData, setSubGroupMetricsData] = useState(null);
   const [genderMetrics, setGenderMetrics] = useState(null);
   const [raceMetrics, setRaceMetrics] = useState(null);
   const [ageMetrics, setAgeMetrics] = useState(null);
@@ -42,10 +42,11 @@ const Prediction = ({csvData,topic,score}) => {
   const [selectedGender, setSelectedGender] = useState('');
   const [selectedRace, setSelectedRace] = useState('');
   const [predictionValue, setPredictionValue] = useState(80);
+  const [calibrationData, setCalibrationData] = useState(null);
 
   // Get unique values for dropdowns
   const genderOptions = ['Male', 'Female'];
-  const raceOptions = ['White', 'Black'];
+  const raceOptions = raceMetrics ? [...new Set(raceMetrics.map(item => item.Subgroup))] : [];
 
   // Filter data based on selected value or show all if none selected
   const filteredGenderData = selectedGender
@@ -109,7 +110,7 @@ const Prediction = ({csvData,topic,score}) => {
         const y_true = finalData.map(row => row.Actual);
         const y_pred = finalData.map(row => row.Prediction);
 
-        const data = await CalculateMetrics(y_true, y_pred);
+        const data = await CalculateMetrics(y_true, y_pred, calibrationData?.processedData);
        
         const formatted = {
           summary_metrics: {
@@ -155,7 +156,7 @@ const Prediction = ({csvData,topic,score}) => {
     if (csvData && csvData.length > 0 && tab === 0) {
       fetchMetrics();
     }
-  }, [csvData, tab]);
+  }, [csvData, tab, calibrationData, score]);
 
   useEffect(() => {
     const runSubgroup = async () => {
@@ -215,7 +216,7 @@ const Prediction = ({csvData,topic,score}) => {
     };
 
     runSubgroup();
-  }, [csvData, tab]);
+  }, [csvData, tab, score]);
 
   useEffect(() => {
     const runDistributions = async () => {
@@ -243,6 +244,61 @@ const Prediction = ({csvData,topic,score}) => {
     }
     runDistributions()
   }, [csvData, tab]);
+
+  useEffect(() => {
+    if (csvData && csvData.length > 0) {
+      const predictions = [];
+      const actual = [];
+      
+      // Process CSV data same way as fetchMetrics
+      const [headers, ...rows] = csvData;
+      
+      const formattedCsvData = rows.map(row =>
+        headers.reduce((acc, header, index) => {
+          acc[header] = row[index];
+          return acc;
+        }, {})
+      );
+      
+      formattedCsvData.forEach((row, index) => {
+        // Use the score prop if provided, otherwise fallback to common column names
+        let predScore;
+        if (score && row[score] !== undefined) {
+          predScore = row[score];
+        } else {
+          predScore = row.Prediction_Score ?? row.Risk_Score ?? row.Score ?? row.Predicted_Outcome;
+        }
+        
+        // If your CSV has "Actual_Outcome" column:
+        const actualOutcome = row.Actual_Outcome ?? row.Outcome ?? row.Actual;
+        
+        console.log("Actual DATA:", actualOutcome);
+
+        if (predScore !== undefined && actualOutcome !== undefined) {
+          // Convert score to probability (0-1 range)
+          let prob = parseFloat(predScore);
+          
+          // If your scores are 0-100, convert to 0-1
+          if (prob > 1) {
+            prob = prob / 100;
+          }
+          
+          predictions.push(prob);
+          actual.push(parseInt(actualOutcome));
+        }
+      });
+    
+      if (predictions.length > 0) {
+        const calibrationResults = calculateCalibrationData(predictions, actual, 10);
+        
+        setCalibrationData({ 
+          predictions, 
+          actual,
+          processedData: calibrationResults
+        });
+      }
+    }
+  }, [csvData, score]);
 
   const calculateDistributions = (data) => {
     const ageGroups = { '0-10': 0,'11-20': 0, '21-30': 0,'31-40': 0,'41-50': 0, '51-60': 0, '60-80+': 0 };
@@ -390,7 +446,7 @@ const Prediction = ({csvData,topic,score}) => {
       >
         <Box display="flex" justifyContent="space-between" width="100%">
         <Typography variant="h5" gutterBottom textAlign="left">
-          Accuracy Metrics: Development of {topic} {score && `(Score: ${score})`}
+          Accuracy Metrics: Development of {topic}
         </Typography>
         </Box>
 
@@ -406,7 +462,7 @@ const Prediction = ({csvData,topic,score}) => {
                 </Tabs>
               </Box>
               {tab === 0 && (
-                <MetricsSection topic={topic} metricsData={metricsData} accuracyChart={accuracyChart} barChartData={barChartData} rocChart={rocChart} predictionValue={predictionValue} onPredictionChange={handlePredictionChange} />
+                <MetricsSection topic={topic} metricsData={metricsData} accuracyChart={accuracyChart} barChartData={barChartData} rocChart={rocChart} predictionValue={predictionValue} onPredictionChange={handlePredictionChange} calibrationData={calibrationData}/>
               )}
               {tab === 1 && (
                 <Box mt={4}>

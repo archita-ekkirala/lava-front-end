@@ -1,4 +1,5 @@
 import * as sk from 'scikitjs';
+import { calculateCalibrationData } from '../charts/CalibrationCurve';
 
 function brierScoreLoss(yTrue, yProb) {
     if (yTrue.length !== yProb.length) {
@@ -42,9 +43,8 @@ function rocCurve(actual, predicted) {
     return { fpr: fprs, tpr: tprs };
 }
 
-export async function CalculateMetrics(yTrue, yPredOriginal) {
-    console.log("in calculate metrics")
-    const { metrics, model_selection } = sk;
+export async function CalculateMetrics(yTrue, yPredOriginal, preCalculatedCalibration = null) {
+    const { metrics } = sk;
 
     const yPred = [...yPredOriginal];
     console.log("yTrue---" + yTrue)
@@ -82,10 +82,10 @@ export async function CalculateMetrics(yTrue, yPredOriginal) {
     } else if (cm.length === 1 && cm[0].length === 2) {
         tn = cm[0][0];
         fp = cm[0][1];
-      } else if (cm.length === 2 && cm[1].length === 1) {
+    } else if (cm.length === 2 && cm[1].length === 1) {
         tn = cm[0][0] || 0;
         fn = cm[1][0] || 0;
-      }else {
+    } else {
         tn = cm[0]?.[0] || 0;
         fp = cm[0]?.[1] || 0;
         fn = cm[1]?.[0] || 0;
@@ -114,6 +114,9 @@ export async function CalculateMetrics(yTrue, yPredOriginal) {
 
     const accuracy = (tp + tn) / (tp + tn + fp + fn);
 
+    // Use pre-calculated calibration data if available, otherwise calculate
+    const calibrationData = preCalculatedCalibration || calculateCalibrationData(yPred, yTrue, 10);
+
     return {
         'Accuracy': accuracy,
         'True Positive': tp,
@@ -132,6 +135,7 @@ export async function CalculateMetrics(yTrue, yPredOriginal) {
         'ROC_CURVE':{
             'fpr': fprVals,
             'tpr': tprVals  
-        }
+        },
+        'CALIBRATION_CURVE': calibrationData
     };
 }

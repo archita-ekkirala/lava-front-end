@@ -81,7 +81,7 @@ const Lava = () => {
               setActivePage('Dashboard');
             }}
           >
-            Dashboard
+            Home
           </Button>
           <Button
             color="inherit"
@@ -91,7 +91,7 @@ const Lava = () => {
             }}
             onClick={() => setActivePage('ModelAnalysis')}
           >
-            Model Analysis
+            Topic Dashboard
           </Button>
           <Button
             color="inherit"

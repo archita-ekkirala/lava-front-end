@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Grid, Paper, Typography, Box, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
 import { Bar, Line } from 'react-chartjs-2';
+import CalibrationCurve from './CalibrationCurve';
 
-const MetricsSection = ({ topic, metricsData, accuracyChart, barChartData, rocChart, recalculateMetrics,predictionValue,onPredictionChange }) => {
+const MetricsSection = ({ topic, metricsData, accuracyChart, barChartData, rocChart, recalculateMetrics,predictionValue,onPredictionChange, calibrationData }) => {
     const [threshold, setThreshold] = useState(20); 
 
     const total = metricsData.confusion_matrix.true_positive +
@@ -219,6 +220,25 @@ const MetricsSection = ({ topic, metricsData, accuracyChart, barChartData, rocCh
                             }}
                         />
                     </Paper>
+                </Grid>
+
+                {/* Chart 5 */}
+                <Grid item xs={12} md={8} width="45%" paddingTop={2}>
+                    {calibrationData && calibrationData.predictions && calibrationData.actual ? (
+                        <CalibrationCurve 
+                            predictions={calibrationData.predictions}
+                            actual={calibrationData.actual}
+                            processedData={calibrationData.processedData}
+                            nBins={10}
+                            title="Calibration Curve"
+                        />
+                    ) : (
+                        <Paper elevation={2} style={{ padding: 16, height: '400px' }}>
+                            <Typography variant="subtitle1" align="center" style={{ marginTop: '180px' }}>
+                                Calibration data not available
+                            </Typography>
+                        </Paper>
+                    )}
                 </Grid>
             </Grid>
         </Box>
